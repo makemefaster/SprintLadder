@@ -5,125 +5,339 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Track Cycle Sprint Ladder</title>
     <style>
-        :root { --primary: #005f73; --secondary: #0a9396; --light: #e9d8a6; --dark: #222; --white: #fff; }
-        body { font-family: sans-serif; background: #f4f4f9; color: #222; max-width: 800px; margin: 0 auto; padding: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; max-width: 900px; margin: 0 auto; padding: 20px; }
         
-        /* Layout */
-        h1, h2 { text-align: center; color: var(--primary); }
-        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid #ddd;}
+        /* Containers */
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .hidden { display: none !important; }
         
-        /* Forms & Inputs */
-        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        input[type="text"] { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex-grow: 1; font-size: 16px; }
-        input.time-input { width: 100px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
-
-        button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
-        button:hover { background: var(--secondary); }
-        button.secondary { background: #6c757d; color: white; }
-        button.action-btn { font-size: 0.8em; padding: 5px 10px; }
-        button.reset-btn { background: #e63946; color: white; font-size: 10px; padding: 5px; margin-bottom: 10px;}
+        h1, h2, h3 { color: #005f73; margin-top: 0; }
         
-        /* Tables */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
-        th { background-color: var(--secondary); color: white; }
-
-        /* Heat Cards */
-        .heat-card { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 5px; background: #fff; display: flex; align-items: center; justify-content: space-between; }
-        .heat-title { font-weight: bold; color: var(--primary); width: 80px; }
-        .riders { flex-grow: 1; display: flex; gap: 10px; flex-direction: column; }
-        .rider-btn { background: #eee; color: #333; text-align: left; border: 1px solid #ccc; padding: 8px; cursor: pointer; transition: all 0.2s; }
-        .rider-btn:hover { background: #d0f4de; border-color: var(--secondary); }
-        .rider-btn.winner { background: #2a9d8f; color: white; border-color: #2a9d8f; }
-        .rider-btn.loser { opacity: 0.5; text-decoration: line-through; }
+        /* Buttons */
+        button { padding: 10px 15px; background: #005f73; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0a9396; }
+        button.secondary { background: #94d2bd; color: #00303b; }
+        button.danger { background: #ae2012; font-size: 0.8em; }
         
-        .toolbar { display: flex; gap: 10px; margin-bottom: 10px; justify-content: flex-end; }
+        /* Import Area */
+        textarea { width: 100%; height: 100px; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
+        
+        /* The Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { background: #e9d8a6; text-align: left; padding: 10px; border-bottom: 2px solid #ddd; }
+        td { padding: 8px; border-bottom: 1px solid #eee; }
+        
+        /* The Time Input Box */
+        input.time-box { 
+            padding: 8px; 
+            width: 120px; 
+            border: 2px solid #ddd; 
+            border-radius: 4px; 
+            font-size: 1.1em; 
+            font-weight: bold; 
+            color: #005f73;
+        }
+        input.time-box:focus { border-color: #0a9396; outline: none; background: #f0fff4; }
+
+        /* Heats */
+        .heat-row { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid #ccc; margin-bottom: 10px; padding: 10px; border-radius: 6px; }
+        .heat-label { font-weight: bold; width: 80px; }
+        .heat-contestants { flex-grow: 1; display: flex; gap: 10px; flex-wrap: wrap; }
+        .racer-btn { 
+            border: 1px solid #ccc; background: #f9f9f9; padding: 8px 12px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; min-width: 150px; 
+        }
+        .racer-btn:hover { background: #e0f2f1; border-color: #005f73; }
+        .winner { background: #2a9d8f !important; color: white; border-color: #1d7066; }
+        .loser { opacity: 0.4; text-decoration: line-through; }
+
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     </style>
 </head>
 <body>
-    
-    <button class="reset-btn" onclick="hardReset()">⚠ Reset All Data</button>
 
-    <h1>🚴 Track Sprint Ladder</h1>
+    <div class="top-bar">
+        <h1>🚴 Track Sprint Manager</h1>
+        <button class="danger" onclick="hardReset()">⚠ Reset All Data</button>
+    </div>
 
-    <div id="qualifying-phase" class="container">
-        <h2>1. Registration & Times</h2>
+    <div id="phase-entry" class="card">
+        <h2>1. Import & Qualifying</h2>
         
-        <div class="input-group">
-            <input type="text" id="riderName" placeholder="Enter Rider Name (Press Enter)">
-            <button id="addBtn">Add Rider</button>
-        </div>
-        
-        <div class="toolbar">
-            <button class="action-btn secondary" id="sortNameBtn">Sort A-Z</button>
-            <button class="action-btn secondary" id="sortTimeBtn">Sort by Time</button>
+        <details open>
+            <summary style="cursor:pointer; font-weight:bold; margin-bottom:10px;">Click to Open/Close Import Box</summary>
+            <p style="font-size:0.9em; margin-bottom:5px;">Paste list of names here (from Excel/Sheets):</p>
+            <textarea id="pasteArea" placeholder="John Doe&#10;Jane Smith&#10;Bob Jones"></textarea>
+            <button onclick="importNames()">Import Names</button>
+        </details>
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+
+        <div style="display:flex; justify-content: space-between; align-items:flex-end;">
+            <h3>Rider List (<span id="riderCount">0</span>)</h3>
+            <div>
+                <button class="secondary" onclick="sortByName()">Sort A-Z</button>
+                <button class="secondary" onclick="sortByTime()">Sort by Time</button>
+            </div>
         </div>
 
         <table>
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>Time (sec)</th>
+                    <th>Qualifying Time</th>
                     <th>Action</th>
                 </tr>
             </thead>
-            <tbody id="riderTableBody"></tbody>
+            <tbody id="riderTable">
+                </tbody>
         </table>
 
-        <div style="margin-top: 20px; text-align: right; border-top: 2px solid #eee; padding-top: 20px;">
-            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">Ensure all times are entered before generating heats.</p>
-            <button id="generateBtn">GENERATE HEATS &rarr;</button>
+        <div style="margin-top: 20px; text-align: center;">
+            <button onclick="generateHeats()" style="font-size: 1.2em; padding: 15px 30px;">GENERATE HEATS &rarr;</button>
         </div>
     </div>
 
-    <div id="racing-phase" class="container hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <button class="secondary" id="backToTimesBtn"> &larr; Back to Times</button>
+    <div id="phase-racing" class="card hidden">
+        <div class="top-bar">
+            <button class="secondary" onclick="showEntryPhase()"> &larr; Back to Entry</button>
             <h2>2. The Ladder</h2>
         </div>
-        
         <div id="heatsContainer"></div>
-
-        <div style="margin-top: 20px; text-align: center;">
-            <button id="finalizeBtn">Complete Round & Show Results</button>
+        <div style="margin-top:20px; text-align:center;">
+            <button onclick="showResultsPhase()">Finish Round</button>
         </div>
     </div>
 
-    <div id="results-phase" class="container hidden">
-        <h2>Round Complete</h2>
-        <div style="display: flex; gap: 20px;">
-            <div style="flex: 1;">
-                <h3>🏆 Winners</h3>
+    <div id="phase-results" class="card hidden">
+        <h2>Round Results</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <div style="background:#e6fffa; padding:15px; border-radius:8px;">
+                <h3 style="color:#2a9d8f;">🏆 Winners (Group A)</h3>
                 <ul id="winnersList"></ul>
             </div>
-            <div style="flex: 1;">
-                <h3>🔻 Losers</h3>
+            <div style="background:#fff5f5; padding:15px; border-radius:8px;">
+                <h3 style="color:#e76f51;">🔻 Losers (Group B)</h3>
                 <ul id="losersList"></ul>
             </div>
         </div>
-        <button class="secondary" id="backToStartBtn" style="margin-top: 20px; width: 100%;">Back to Start</button>
+        <button class="secondary" onclick="showEntryPhase()" style="margin-top:20px; width:100%;">Return to Start</button>
     </div>
 
 <script>
-    // --- SAFE STARTUP LOGIC ---
-    document.addEventListener('DOMContentLoaded', function() {
-        // This ensures the HTML is loaded before JS runs
-        initApp();
-    });
-
-    // Global State
+    // --- DATA STORE ---
     let riders = [];
-    let currentHeats = [];
+    let heats = [];
+
+    // --- INITIALIZATION ---
+    // Load data immediately
+    const saved = localStorage.getItem('trackRiders_v2');
+    if (saved) {
+        riders = JSON.parse(saved);
+        renderTable();
+    }
+
+    function save() {
+        localStorage.setItem('trackRiders_v2', JSON.stringify(riders));
+    }
 
     function hardReset() {
-        if(confirm("This will delete all data. Are you sure?")) {
-            localStorage.clear();
+        if(confirm("Delete all names and times?")) {
+            localStorage.removeItem('trackRiders_v2');
+            riders = [];
+            heats = [];
+            renderTable();
             location.reload();
         }
     }
 
-    function initApp() {
-        try {
-            // Attempt to load data
-            const savedData = localStorage.getItem('trackRiders');
+    // --- PHASE 1: LOGIC ---
+
+    function importNames() {
+        const text = document.getElementById('pasteArea').value;
+        if (!text.trim()) return alert("Paste some names first!");
+
+        const lines = text.split('\n');
+        let count = 0;
+        
+        lines.forEach(line => {
+            const cleanName = line.trim();
+            if (cleanName) {
+                riders.push({
+                    id: Date.now() + Math.random(), // Unique ID
+                    name: cleanName,
+                    time: null
+                });
+                count++;
+            }
+        });
+
+        document.getElementById('pasteArea').value = ''; // Clear box
+        save();
+        renderTable();
+        alert(`Imported ${count} riders.`);
+    }
+
+    function updateTime(id, value) {
+        const r = riders.find(x => x.id == id);
+        if(r) {
+            r.time = value ? parseFloat(value) : null;
+            save();
+        }
+    }
+
+    function deleteRider(id) {
+        if(confirm("Remove this rider?")) {
+            riders = riders.filter(x => x.id != id);
+            save();
+            renderTable();
+        }
+    }
+
+    function sortByName() {
+        riders.sort((a, b) => a.name.localeCompare(b.name));
+        renderTable();
+    }
+
+    function sortByTime() {
+        riders.sort((a, b) => {
+            if (a.time === null) return 1;
+            if (b.time === null) return -1;
+            return a.time - b.time;
+        });
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('riderTable');
+        document.getElementById('riderCount').innerText = riders.length;
+        tbody.innerHTML = '';
+
+        riders.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${r.name}</strong></td>
+                <td>
+                    <input type="number" step="0.001" class="time-box" 
+                        placeholder="0.000" 
+                        value="${r.time !== null ? r.time : ''}" 
+                        onchange="updateTime(${r.id}, this.value)">
+                </td>
+                <td><button class="danger" onclick="deleteRider(${r.id})">X</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // --- PHASE 2: HEATS ---
+
+    function generateHeats() {
+        if(riders.length < 2) return alert("Need at least 2 riders.");
+        
+        // Check for missing times
+        const missing = riders.filter(r => r.time === null || isNaN(r.time));
+        if(missing.length > 0) {
+            if(!confirm(`Warning: ${missing.length} riders have no time. Continue anyway? (They will be seeded last)`)) {
+                return;
+            }
+        }
+
+        sortByTime(); // Ensure sorted fast to slow
+        
+        heats = [];
+        let pool = [...riders];
+        let heatNum = 1;
+
+        // Logic: 1 vs 2, 3 vs 4... handle odd numbers at the end
+        while(pool.length > 0) {
+            let h = { id: heatNum, contestants: [], winnerId: null };
+            
+            if (pool.length === 3) {
+                // Last 3 go together
+                h.contestants = [pool.shift(), pool.shift(), pool.shift()];
+            } else if (pool.length >= 2) {
+                // Standard pair
+                h.contestants = [pool.shift(), pool.shift()];
+            } else {
+                // 1 left over (rare edge case)
+                if(heats.length > 0) {
+                    heats[heats.length-1].contestants.push(pool.shift());
+                } else {
+                    h.contestants = [pool.shift()]; // Only 1 rider total
+                }
+            }
+            if(h.contestants.length > 0) heats.push(h);
+            heatNum++;
+        }
+
+        renderHeats();
+        document.getElementById('phase-entry').classList.add('hidden');
+        document.getElementById('phase-racing').classList.remove('hidden');
+    }
+
+    function renderHeats() {
+        const container = document.getElementById('heatsContainer');
+        container.innerHTML = '';
+        
+        heats.forEach(h => {
+            let buttons = h.contestants.map(c => {
+                let statusClass = '';
+                if(h.winnerId === c.id) statusClass = 'winner';
+                else if(h.winnerId !== null) statusClass = 'loser';
+
+                return `
+                <div class="racer-btn ${statusClass}" onclick="selectWinner(${h.id}, ${c.id})">
+                    <span>${c.name}</span>
+                    <small>${c.time || 'N/T'}</small>
+                </div>`;
+            }).join('');
+
+            container.innerHTML += `
+                <div class="heat-row">
+                    <div class="heat-label">Heat ${h.id}</div>
+                    <div class="heat-contestants">${buttons}</div>
+                </div>
+            `;
+        });
+    }
+
+    function selectWinner(heatId, winnerId) {
+        const h = heats.find(x => x.id === heatId);
+        h.winnerId = winnerId;
+        renderHeats();
+    }
+
+    // --- PHASE 3: RESULTS ---
+
+    function showResultsPhase() {
+        const incomplete = heats.some(h => h.winnerId === null);
+        if(incomplete) return alert("Please select a winner for every heat first.");
+
+        const winners = [];
+        const losers = [];
+
+        heats.forEach(h => {
+            h.contestants.forEach(c => {
+                if(c.id === h.winnerId) winners.push(c);
+                else losers.push(c);
+            });
+        });
+
+        document.getElementById('winnersList').innerHTML = winners.map(x => `<li>${x.name}</li>`).join('');
+        document.getElementById('losersList').innerHTML = losers.map(x => `<li>${x.name}</li>`).join('');
+
+        document.getElementById('phase-racing').classList.add('hidden');
+        document.getElementById('phase-results').classList.remove('hidden');
+    }
+
+    // --- NAVIGATION ---
+    
+    function showEntryPhase() {
+        document.getElementById('phase-results').classList.add('hidden');
+        document.getElementById('phase-racing').classList.add('hidden');
+        document.getElementById('phase-entry').classList.remove('hidden');
+        renderTable();
+    }
+
+</script>
+</body>
+</html>
