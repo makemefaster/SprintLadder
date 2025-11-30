@@ -6,23 +6,23 @@
     <title>Track Cycle Sprint Ladder</title>
     <style>
         :root { --primary: #005f73; --secondary: #0a9396; --light: #e9d8a6; --dark: #222; --white: #fff; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f9; color: var(--dark); max-width: 800px; margin: 0 auto; padding: 20px; }
+        body { font-family: sans-serif; background: #f4f4f9; color: #222; max-width: 800px; margin: 0 auto; padding: 20px; }
         
         /* Layout */
         h1, h2 { text-align: center; color: var(--primary); }
-        .container { background: var(--white); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .hidden { display: none; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid #ddd;}
+        .hidden { display: none !important; }
         
         /* Forms & Inputs */
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        input[type="text"] { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex-grow: 1; }
-        /* Special style for the time input inside the table */
+        input[type="text"] { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex-grow: 1; font-size: 16px; }
         input.time-input { width: 100px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
 
-        button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
         button:hover { background: var(--secondary); }
         button.secondary { background: #6c757d; color: white; }
         button.action-btn { font-size: 0.8em; padding: 5px 10px; }
+        button.reset-btn { background: #e63946; color: white; font-size: 10px; padding: 5px; margin-bottom: 10px;}
         
         /* Tables */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -38,4 +38,92 @@
         .rider-btn.winner { background: #2a9d8f; color: white; border-color: #2a9d8f; }
         .rider-btn.loser { opacity: 0.5; text-decoration: line-through; }
         
-        .toolbar { display: flex; gap: 10px; margin-bottom: 10px; justify-content:
+        .toolbar { display: flex; gap: 10px; margin-bottom: 10px; justify-content: flex-end; }
+    </style>
+</head>
+<body>
+    
+    <button class="reset-btn" onclick="hardReset()">⚠ Reset All Data</button>
+
+    <h1>🚴 Track Sprint Ladder</h1>
+
+    <div id="qualifying-phase" class="container">
+        <h2>1. Registration & Times</h2>
+        
+        <div class="input-group">
+            <input type="text" id="riderName" placeholder="Enter Rider Name (Press Enter)">
+            <button id="addBtn">Add Rider</button>
+        </div>
+        
+        <div class="toolbar">
+            <button class="action-btn secondary" id="sortNameBtn">Sort A-Z</button>
+            <button class="action-btn secondary" id="sortTimeBtn">Sort by Time</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Time (sec)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="riderTableBody"></tbody>
+        </table>
+
+        <div style="margin-top: 20px; text-align: right; border-top: 2px solid #eee; padding-top: 20px;">
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">Ensure all times are entered before generating heats.</p>
+            <button id="generateBtn">GENERATE HEATS &rarr;</button>
+        </div>
+    </div>
+
+    <div id="racing-phase" class="container hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <button class="secondary" id="backToTimesBtn"> &larr; Back to Times</button>
+            <h2>2. The Ladder</h2>
+        </div>
+        
+        <div id="heatsContainer"></div>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <button id="finalizeBtn">Complete Round & Show Results</button>
+        </div>
+    </div>
+
+    <div id="results-phase" class="container hidden">
+        <h2>Round Complete</h2>
+        <div style="display: flex; gap: 20px;">
+            <div style="flex: 1;">
+                <h3>🏆 Winners</h3>
+                <ul id="winnersList"></ul>
+            </div>
+            <div style="flex: 1;">
+                <h3>🔻 Losers</h3>
+                <ul id="losersList"></ul>
+            </div>
+        </div>
+        <button class="secondary" id="backToStartBtn" style="margin-top: 20px; width: 100%;">Back to Start</button>
+    </div>
+
+<script>
+    // --- SAFE STARTUP LOGIC ---
+    document.addEventListener('DOMContentLoaded', function() {
+        // This ensures the HTML is loaded before JS runs
+        initApp();
+    });
+
+    // Global State
+    let riders = [];
+    let currentHeats = [];
+
+    function hardReset() {
+        if(confirm("This will delete all data. Are you sure?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    function initApp() {
+        try {
+            // Attempt to load data
+            const savedData = localStorage.getItem('trackRiders');
