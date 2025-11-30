@@ -11,7 +11,7 @@
         /* Headers */
         header { text-align: center; margin-bottom: 30px; border-bottom: 4px solid var(--accent); padding-bottom: 20px; }
         h1 { color: var(--primary); margin: 0; text-transform: uppercase; letter-spacing: 1px; }
-        h2 { font-size: 1.2rem; color: #666; font-weight: normal; }
+        h2 { font-size: 1.2rem; color: #666; font-weight: normal; margin-top: 5px; }
         
         /* Cards */
         .card { background: var(--card); padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 25px; border-top: 5px solid var(--primary); }
@@ -21,11 +21,11 @@
         .btn { padding: 12px 24px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: background 0.2s; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-primary:hover { background: #003399; }
-        .btn-danger { background: var(--accent); color: white; font-size: 0.8rem; padding: 8px 16px; }
+        .btn-danger { background: var(--accent); color: white; font-size: 0.8rem; padding: 8px 16px; margin-top: 10px;}
         .btn-action { width: 100%; margin-top: 15px; background: #28a745; color: white; }
         
         /* Tables & Inputs */
-        textarea { width: 100%; height: 100px; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        textarea { width: 100%; height: 100px; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th { background: #eee; text-align: left; padding: 12px; border-bottom: 2px solid #ccc; font-weight: bold; color: var(--primary); }
         td { padding: 10px; border-bottom: 1px solid #eee; }
@@ -41,7 +41,7 @@
         .rider-select { 
             display: flex; justify-content: space-between; align-items: center;
             background: #f9f9f9; border: 1px solid #eee; padding: 10px; margin-bottom: 8px; 
-            border-radius: 4px; cursor: pointer; transition: all 0.2s; 
+            border-radius: 4px; cursor: pointer; transition: all 0.2s; user-select: none;
         }
         .rider-select:hover { background: #eef; border-color: var(--primary); }
         
@@ -66,27 +66,29 @@
 <header>
     <h1>Sprint Futures Ladder</h1>
     <h2 id="phaseDisplay">Phase 1: Qualifying</h2>
-    <button class="btn btn-danger" onclick="hardReset()">⚠ Reset Event</button>
+    <button class="btn btn-danger" onclick="hardReset()">⚠ Reset / Clear All Data</button>
 </header>
 
 <div id="phase-qualifying" class="card">
-    <h3>1. Rider Registration & Qualifying</h3>
-    <p>Paste names from Excel (one per line) or type them in.</p>
+    <h3>1. Rider Registration</h3>
+    <p>Paste names below (one name per line) and click Import.</p>
     
-    <textarea id="importArea" placeholder="Paste names here..."></textarea>
-    <button class="btn btn-primary" onclick="importNames()">Import Riders</button>
+    <textarea id="importArea" placeholder="Example:&#10;John Smith&#10;Jane Doe&#10;Bob Jones"></textarea>
+    <button class="btn btn-primary" id="importBtn">Import Riders</button>
     
-    <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
-        <span><strong>Riders:</strong> <span id="riderCount">0</span></span>
-        <button class="btn" style="background:#ddd;" onclick="sortByTime()">Sort by Time</button>
+    <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #eee; padding-top:15px;">
+        <span><strong>Riders Registered:</strong> <span id="riderCount">0</span></span>
+        <button class="btn" style="background:#ddd; font-size:0.9em;" onclick="sortByTime()">Sort by Time</button>
     </div>
 
     <table>
-        <thead><tr><th>Seed</th><th>Name</th><th>Time (Flying 200/Lap)</th><th>Action</th></tr></thead>
+        <thead><tr><th>Seed</th><th>Name</th><th>Time (Sec)</th><th>Action</th></tr></thead>
         <tbody id="riderTable"></tbody>
     </table>
 
-    <button class="btn btn-action" onclick="generateRound1()">GENERATE ROUND 1 HEATS &rarr;</button>
+    <div style="text-align: center; margin-top: 20px;">
+        <button class="btn btn-action" onclick="generateRound1()">GENERATE ROUND 1 HEATS &rarr;</button>
+    </div>
 </div>
 
 <div id="phase-racing" class="card hidden">
@@ -95,8 +97,8 @@
         <span class="status-badge" id="roundBadge">Round 1</span>
     </div>
     
-    <p style="background:#e3f2fd; padding:10px; border-radius:4px; color: #0d47a1;">
-        <strong>Instructions:</strong> Click riders in the order they cross the finish line.<br>
+    <p style="background:#e3f2fd; padding:10px; border-radius:4px; color: #0d47a1; border-left: 5px solid #2196F3;">
+        <strong>Instructions:</strong> Click riders in their finish order.<br>
         1st Click = Winner (Green), Last Click = Loser (Red).
     </p>
 
@@ -107,213 +109,12 @@
 
 <div id="phase-standings" class="card hidden">
     <h3>Event Complete</h3>
-    <table>
-        <thead><tr><th>Rank</th><th>Name</th><th>Qualifying Time</th></tr></thead>
-        <tbody id="finalTable"></tbody>
-    </table>
-    <button class="btn btn-primary" onclick="location.reload()">Start New Event</button>
+    <div style="text-align:center; padding: 40px;">
+        <h2>🏁 Competition Finished</h2>
+        <p>The ladder is complete.</p>
+        <button class="btn btn-primary" onclick="hardReset()">Start New Event</button>
+    </div>
 </div>
 
 <script>
-    // --- STATE MANAGEMENT ---
-    let riders = [];
-    let heats = [];
-    let roundCounter = 1;
-    const TOTAL_ROUNDS = 3; // Typically 2 rounds + Final
-
-    // Initialize
-    window.onload = function() {
-        const saved = localStorage.getItem('sprintData');
-        if(saved) {
-            const data = JSON.parse(saved);
-            riders = data.riders;
-            heats = data.heats;
-            roundCounter = data.roundCounter;
-            
-            if(heats.length > 0) {
-                showPhase('phase-racing');
-                renderHeats();
-            } else {
-                renderTable();
-            }
-        }
-    };
-
-    function save() {
-        localStorage.setItem('sprintData', JSON.stringify({ riders, heats, roundCounter }));
-    }
-
-    function hardReset() {
-        if(confirm("Delete all data and start over?")) {
-            localStorage.removeItem('sprintData');
-            location.reload();
-        }
-    }
-
-    // --- PHASE 1: QUALIFYING ---
-
-    function importNames() {
-        const text = document.getElementById('importArea').value;
-        if(!text.trim()) return;
-        text.split('\n').forEach(line => {
-            if(line.trim()) {
-                riders.push({ 
-                    id: 'r' + Date.now() + Math.random().toString(36).substr(2, 5),
-                    name: line.trim(), 
-                    time: 999 
-                });
-            }
-        });
-        document.getElementById('importArea').value = '';
-        save();
-        renderTable();
-    }
-
-    function updateTime(id, val) {
-        const r = riders.find(x => x.id === id);
-        if(r) r.time = parseFloat(val) || 999;
-        save();
-    }
-
-    function sortByTime() {
-        riders.sort((a,b) => a.time - b.time);
-        renderTable();
-    }
-
-    function renderTable() {
-        const tbody = document.getElementById('riderTable');
-        document.getElementById('riderCount').innerText = riders.length;
-        tbody.innerHTML = '';
-        riders.forEach((r, i) => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${i+1}</td>
-                    <td>${r.name}</td>
-                    <td><input class="time-box" type="number" step="0.001" value="${r.time === 999 ? '' : r.time}" onchange="updateTime('${r.id}', this.value)"></td>
-                    <td><button onclick="deleteRider('${r.id}')">x</button></td>
-                </tr>
-            `;
-        });
-    }
-
-    function deleteRider(id) {
-        riders = riders.filter(r => r.id !== id);
-        save();
-        renderTable();
-    }
-
-    // --- PHASE 2: HEAT GENERATION (THE LOGIC) ---
-
-    function generateRound1() {
-        if(riders.length < 2) return alert("Need at least 2 riders");
-        
-        // 1. Sort by Time (Fastest to Slowest)
-        riders.sort((a,b) => a.time - b.time);
-
-        heats = [];
-        let pool = [...riders];
-        
-        // Heat A is ALWAYS 2 Riders
-        heats.push({
-            name: "Heat A",
-            riders: [pool.shift(), pool.shift()],
-            results: [] // Array of IDs in finish order
-        });
-
-        // Remaining Heats are 3-up (or 2-up if reminders)
-        let heatChar = 66; // ASCII for 'B'
-        while(pool.length > 0) {
-            let size = 3;
-            // Adjustment for end of list to avoid 1-person heats
-            if (pool.length === 4) size = 2; // Split 4 into 2 and 2
-            if (pool.length === 2) size = 2;
-            if (pool.length === 1) {
-                // Should have been caught by the 4 logic, but fallback: add to previous
-                heats[heats.length-1].riders.push(pool.shift());
-                continue;
-            }
-
-            let heatRiders = [];
-            for(let i=0; i<size; i++) if(pool.length) heatRiders.push(pool.shift());
-
-            heats.push({
-                name: "Heat " + String.fromCharCode(heatChar),
-                riders: heatRiders,
-                results: []
-            });
-            heatChar++;
-        }
-
-        roundCounter = 1;
-        save();
-        showPhase('phase-racing');
-        renderHeats();
-    }
-
-    function renderHeats() {
-        const container = document.getElementById('heatsContainer');
-        container.innerHTML = '';
-        document.getElementById('roundBadge').innerText = roundCounter === TOTAL_ROUNDS ? "FINAL ROUND" : "Round " + roundCounter;
-
-        heats.forEach((heat, hIndex) => {
-            let html = `<div class="heat-card">
-                <div class="heat-header">
-                    <span>${heat.name}</span>
-                    <span>${heat.riders.length} Riders</span>
-                </div>
-                <div class="heat-body">`;
-            
-            // Sort riders by result if they exist, otherwise unsorted
-            let displayRiders = heat.riders;
-            
-            displayRiders.forEach(r => {
-                // Determine class based on position in results array
-                let posClass = '';
-                let posIndex = heat.results.indexOf(r.id);
-                
-                if (posIndex === 0) posClass = roundCounter === TOTAL_ROUNDS ? 'pos-1-final' : 'pos-1'; // Winner
-                else if (posIndex === heat.riders.length - 1 && posIndex > 0) posClass = 'pos-3'; // Last
-                else if (posIndex > 0) posClass = 'pos-2'; // Middle
-
-                html += `<div class="rider-select ${posClass}" onclick="setResult(${hIndex}, '${r.id}')">
-                            <span>${r.name}</span>
-                         </div>`;
-            });
-            
-            html += `</div></div>`;
-            container.innerHTML += html;
-        });
-    }
-
-    // Logic for clicking riders to set 1st, 2nd, 3rd
-    function setResult(heatIndex, riderId) {
-        let heat = heats[heatIndex];
-        
-        // If already selected, remove it (toggle off)
-        if (heat.results.includes(riderId)) {
-            heat.results = heat.results.filter(id => id !== riderId);
-        } else {
-            // Add to end of results list
-            if (heat.results.length < heat.riders.length) {
-                heat.results.push(riderId);
-            }
-        }
-        save();
-        renderHeats();
-    }
-
-    // --- PHASE 3: PROMOTION / DEMOTION LOGIC ---
-
-    function finishRound() {
-        // Validate
-        for(let h of heats) {
-            if(h.results.length !== h.riders.length) return alert(`Please finish ranking ${h.name}`);
-        }
-
-        if(roundCounter >= TOTAL_ROUNDS) {
-            alert("Event Complete!");
-            return; // Add final standings logic here if needed
-        }
-
-        // Prepare Next Round Buckets
-        // We initialize buckets for A, B, C... matching current
+    //
