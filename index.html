@@ -74,7 +74,7 @@
     <p>Paste names below (one name per line) and click Import.</p>
     
     <textarea id="importArea" placeholder="Example:&#10;John Smith&#10;Jane Doe&#10;Bob Jones"></textarea>
-    <button class="btn btn-primary" id="importBtn">Import Riders</button>
+    <button class="btn btn-primary" onclick="importNames()">Import Riders</button>
     
     <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #eee; padding-top:15px;">
         <span><strong>Riders Registered:</strong> <span id="riderCount">0</span></span>
@@ -117,4 +117,292 @@
 </div>
 
 <script>
-    //
+    // --- STATE MANAGEMENT ---
+    let riders = [];
+    let heats = [];
+    let roundCounter = 1;
+    const TOTAL_ROUNDS = 3; 
+    const STORAGE_KEY = 'sprintData_v6'; // Updated Key
+
+    // --- SAFETY LOAD SYSTEM ---
+    window.onload = function() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if(saved) {
+                const data = JSON.parse(saved);
+                if(data.riders && Array.isArray(data.riders)) {
+                    riders = data.riders;
+                    heats = data.heats || [];
+                    roundCounter = data.roundCounter || 1;
+                    
+                    if(heats.length > 0) {
+                        showPhase('phase-racing');
+                        renderHeats();
+                    } else {
+                        renderTable();
+                    }
+                }
+            }
+        } catch(e) {
+            console.warn("Data corrupt or old version. Resetting.", e);
+            localStorage.removeItem(STORAGE_KEY);
+            riders = [];
+        }
+    };
+
+    function save() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ riders, heats, roundCounter }));
+    }
+
+    // MAKE FUNCTION GLOBAL FOR BUTTON
+    window.hardReset = function() {
+        if(confirm("Are you sure? This will delete all names and times.")) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+
+    // --- PHASE 1: QUALIFYING ---
+
+    // MAKE FUNCTION GLOBAL FOR BUTTON
+    window.importNames = function() {
+        const input = document.getElementById('importArea');
+        const text = input.value;
+        
+        if(!text.trim()) {
+            alert("Please paste some names in the box first.");
+            return;
+        }
+
+        const lines = text.split(/\r?\n/);
+        let count = 0;
+
+        lines.forEach(line => {
+            if(line.trim()) {
+                riders.push({ 
+                    id: 'r' + Date.now() + Math.random().toString(36).substr(2, 5),
+                    name: line.trim(), 
+                    time: 999 
+                });
+                count++;
+            }
+        });
+
+        input.value = ''; 
+        save();
+        renderTable();
+        alert("Imported " + count + " riders successfully!");
+    }
+
+    window.updateTime = function(id, val) {
+        const r = riders.find(x => x.id === id);
+        if(r) r.time = parseFloat(val) || 999;
+        save();
+    }
+
+    window.sortByTime = function() {
+        riders.sort((a,b) => a.time - b.time);
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('riderTable');
+        document.getElementById('riderCount').innerText = riders.length;
+        tbody.innerHTML = '';
+        
+        riders.forEach((r, i) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${i+1}</td>
+                <td>${r.name}</td>
+                <td><input class="time-box" type="number" step="0.001" placeholder="0.000" value="${r.time === 999 ? '' : r.time}" onchange="updateTime('${r.id}', this.value)"></td>
+                <td><button style="background:#ffcccc; border:1px solid red; cursor:pointer;" onclick="deleteRider('${r.id}')">X</button></td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    window.deleteRider = function(id) {
+        if(confirm('Remove rider?')) {
+            riders = riders.filter(r => r.id !== id);
+            save();
+            renderTable();
+        }
+    }
+
+    // --- PHASE 2: HEAT GENERATION ---
+
+    window.generateRound1 = function() {
+        if(riders.length < 2) return alert("Need at least 2 riders");
+        
+        // 1. Sort by Time (Fastest to Slowest)
+        riders.sort((a,b) => a.time - b.time);
+
+        heats = [];
+        let pool = [...riders];
+        
+        // Heat A is ALWAYS 2 Riders
+        if(pool.length >= 2) {
+            heats.push({
+                name: "Heat A",
+                riders: [pool.shift(), pool.shift()],
+                results: [] 
+            });
+        }
+
+        // Remaining Heats are 3-up
+        let heatChar = 66; // 'B'
+        while(pool.length > 0) {
+            let size = 3;
+            // Adjustment for remainders to ensure no 1-rider heats
+            if (pool.length === 4) size = 2; 
+            if (pool.length === 2) size = 2;
+            if (pool.length === 1) {
+                // Add straggler to previous heat if necessary
+                if(heats.length > 0) heats[heats.length-1].riders.push(pool.shift());
+                continue;
+            }
+
+            let heatRiders = [];
+            for(let i=0; i<size; i++) if(pool.length) heatRiders.push(pool.shift());
+
+            heats.push({
+                name: "Heat " + String.fromCharCode(heatChar),
+                riders: heatRiders,
+                results: []
+            });
+            heatChar++;
+        }
+
+        roundCounter = 1;
+        save();
+        showPhase('phase-racing');
+        renderHeats();
+    }
+
+    function renderHeats() {
+        const container = document.getElementById('heatsContainer');
+        container.innerHTML = '';
+        document.getElementById('roundBadge').innerText = roundCounter === TOTAL_ROUNDS ? "FINAL ROUND" : "Round " + roundCounter;
+
+        heats.forEach((heat, hIndex) => {
+            const card = document.createElement('div');
+            card.className = 'heat-card';
+            
+            let html = `
+                <div class="heat-header">
+                    <span>${heat.name}</span>
+                    <span>${heat.riders.length} Riders</span>
+                </div>
+                <div class="heat-body">`;
+            
+            heat.riders.forEach(r => {
+                let posClass = '';
+                let posIndex = heat.results.indexOf(r.id);
+                
+                // Visual Styling for 1st, 2nd, Last
+                if (posIndex === 0) posClass = roundCounter === TOTAL_ROUNDS ? 'pos-1-final' : 'pos-1';
+                else if (posIndex === heat.riders.length - 1 && posIndex > 0) posClass = 'pos-3'; // Last
+                else if (posIndex > 0) posClass = 'pos-2'; // Middle/2nd
+
+                html += `<div class="rider-select ${posClass}" onclick="setResult(${hIndex}, '${r.id}')">
+                            <span>${r.name}</span>
+                         </div>`;
+            });
+            
+            html += `</div>`;
+            card.innerHTML = html;
+            container.appendChild(card);
+        });
+    }
+
+    window.setResult = function(heatIndex, riderId) {
+        let heat = heats[heatIndex];
+        
+        // Toggle Logic
+        if (heat.results.includes(riderId)) {
+            heat.results = heat.results.filter(id => id !== riderId);
+        } else {
+            if (heat.results.length < heat.riders.length) {
+                heat.results.push(riderId);
+            }
+        }
+        save();
+        renderHeats();
+    }
+
+    // --- PHASE 3: PROMOTION / DEMOTION ---
+
+    window.finishRound = function() {
+        // Validation
+        for(let h of heats) {
+            if(h.results.length !== h.riders.length) return alert(`Please select finishing positions for ${h.name} first.`);
+        }
+
+        if(roundCounter >= TOTAL_ROUNDS) {
+            showPhase('phase-standings');
+            return;
+        }
+
+        // Logic: Winner UP, Loser DOWN
+        let nextRoundBuckets = heats.map(() => []);
+
+        heats.forEach((heat, index) => {
+            const winnerId = heat.results[0];
+            const loserId = heat.results[heat.results.length - 1];
+            
+            // 1. Winner moves UP (index - 1)
+            if (index === 0) {
+                nextRoundBuckets[0].push(getRider(winnerId)); // Heat A winner stays in A
+            } else {
+                nextRoundBuckets[index - 1].push(getRider(winnerId));
+            }
+
+            // 2. Loser moves DOWN (index + 1)
+            if (index === heats.length - 1) {
+                nextRoundBuckets[index].push(getRider(loserId)); // Last heat loser stays
+            } else {
+                nextRoundBuckets[index + 1].push(getRider(loserId));
+            }
+
+            // 3. Middle Riders (Stay)
+            for(let i=1; i < heat.results.length - 1; i++) {
+                nextRoundBuckets[index].push(getRider(heat.results[i]));
+            }
+        });
+
+        // Create new heat objects
+        heats = nextRoundBuckets.map((bucket, i) => ({
+            name: heats[i].name,
+            riders: bucket,
+            results: []
+        }));
+
+        roundCounter++;
+        save();
+        renderHeats();
+        alert("Round Complete! Winners promoted, losers relegated.");
+    }
+
+    function getRider(id) {
+        return riders.find(r => r.id === id);
+    }
+
+    function showPhase(id) {
+        ['phase-qualifying', 'phase-racing', 'phase-standings'].forEach(p => {
+            document.getElementById(p).classList.add('hidden');
+        });
+        document.getElementById(id).classList.remove('hidden');
+        
+        const titles = {
+            'phase-qualifying': 'Qualifying',
+            'phase-racing': 'Ladder Racing',
+            'phase-standings': 'Final Results'
+        };
+        document.getElementById('phaseDisplay').innerText = titles[id];
+    }
+
+</script>
+
+</body>
+</html>
