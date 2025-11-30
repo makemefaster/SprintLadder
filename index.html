@@ -15,270 +15,27 @@
         
         /* Forms & Inputs */
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex-grow: 1; }
+        input[type="text"] { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex-grow: 1; }
+        /* Special style for the time input inside the table */
+        input.time-input { width: 100px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+
         button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button:hover { background: var(--secondary); }
-        button.secondary { background: #94d2bd; color: var(--dark); }
+        button.secondary { background: #6c757d; color: white; }
+        button.action-btn { font-size: 0.8em; padding: 5px 10px; }
         
         /* Tables */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
         th { background-color: var(--secondary); color: white; }
 
         /* Heat Cards */
         .heat-card { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 5px; background: #fff; display: flex; align-items: center; justify-content: space-between; }
         .heat-title { font-weight: bold; color: var(--primary); width: 80px; }
         .riders { flex-grow: 1; display: flex; gap: 10px; flex-direction: column; }
-        .rider-btn { background: #eee; color: #333; text-align: left; border: 1px solid #ccc; transition: all 0.2s; }
+        .rider-btn { background: #eee; color: #333; text-align: left; border: 1px solid #ccc; padding: 8px; cursor: pointer; transition: all 0.2s; }
         .rider-btn:hover { background: #d0f4de; border-color: var(--secondary); }
         .rider-btn.winner { background: #2a9d8f; color: white; border-color: #2a9d8f; }
         .rider-btn.loser { opacity: 0.5; text-decoration: line-through; }
         
-        .status-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
-
-    <h1>🚴 Track Sprint Ladder</h1>
-
-    <div id="qualifying-phase" class="container">
-        <h2>Phase 1: Qualifying & Entry</h2>
-        <div class="input-group">
-            <input type="text" id="riderName" placeholder="Rider Name">
-            <input type="number" id="riderTime" placeholder="Time (sec)" step="0.001">
-            <button onclick="addRider()">Add Rider</button>
-        </div>
-        
-        <h3>Qualifying Standings</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Seed</th>
-                    <th>Name</th>
-                    <th>Time</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="riderTableBody"></tbody>
-        </table>
-
-        <div style="margin-top: 20px; text-align: right;">
-            <button onclick="generateHeats()">GENERATE HEATS &rarr;</button>
-        </div>
-    </div>
-
-    <div id="racing-phase" class="container hidden">
-        <div class="status-bar">
-            <button class="secondary" onclick="goBack()"> &larr; Back to Entry</button>
-            <h2>Phase 2: The Ladder</h2>
-        </div>
-        
-        <div id="heatsContainer"></div>
-
-        <div style="margin-top: 20px; text-align: center;">
-            <button onclick="finalizeRound()">Complete Round & Show Results</button>
-        </div>
-    </div>
-
-    <div id="results-phase" class="container hidden">
-        <h2>Round Complete</h2>
-        <div style="display: flex; gap: 20px;">
-            <div style="flex: 1;">
-                <h3>🏆 Winners (Group A)</h3>
-                <ul id="winnersList"></ul>
-            </div>
-            <div style="flex: 1;">
-                <h3>🔻 Losers (Group B)</h3>
-                <ul id="losersList"></ul>
-            </div>
-        </div>
-        <button onclick="resetHeats()" style="margin-top: 20px; width: 100%;">Reset for Next Round</button>
-    </div>
-
-<script>
-    // State Management
-    let riders = JSON.parse(localStorage.getItem('trackRiders')) || [];
-    let currentHeats = [];
-    let winners = [];
-    let losers = [];
-
-    // --- PHASE 1: LOGIC ---
-
-    function addRider() {
-        const name = document.getElementById('riderName').value;
-        const time = parseFloat(document.getElementById('riderTime').value);
-
-        if (!name || !time) return alert("Please enter name and time");
-
-        riders.push({ id: Date.now(), name, time });
-        sortRiders();
-        saveData();
-        renderTable();
-        
-        // Clear inputs
-        document.getElementById('riderName').value = '';
-        document.getElementById('riderTime').value = '';
-        document.getElementById('riderName').focus();
-    }
-
-    function sortRiders() {
-        // Sort by time (lowest/fastest first)
-        riders.sort((a, b) => a.time - b.time);
-    }
-
-    function deleteRider(id) {
-        riders = riders.filter(r => r.id !== id);
-        saveData();
-        renderTable();
-    }
-
-    function renderTable() {
-        const tbody = document.getElementById('riderTableBody');
-        tbody.innerHTML = '';
-        riders.forEach((r, index) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>#${index + 1}</td>
-                <td>${r.name}</td>
-                <td>${r.time.toFixed(3)}</td>
-                <td><button style="background:#e76f51; padding:5px 10px;" onclick="deleteRider(${r.id})">X</button></td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    // --- PHASE 2: HEAT GENERATION ---
-
-    function generateHeats() {
-        if (riders.length < 2) return alert("Need at least 2 riders.");
-        
-        // Sort one last time to be sure
-        sortRiders();
-
-        currentHeats = [];
-        let pool = [...riders]; // Copy array
-        
-        // LOGIC: Fastest vs 2nd Fastest (1 vs 2)
-        // ODD NUMBER HANDLING: 3 riders in the second to last heat if necessary.
-        
-        let heatCounter = 1;
-
-        while (pool.length > 0) {
-            // Check for the "3 riders left" scenario to handle the "odd number" rule
-            // If we have exactly 3 left, make a 3-way heat
-            if (pool.length === 3) {
-                currentHeats.push({
-                    id: heatCounter,
-                    riders: [pool.shift(), pool.shift(), pool.shift()],
-                    winnerId: null
-                });
-            } 
-            // Standard Pair
-            else if (pool.length >= 2) {
-                currentHeats.push({
-                    id: heatCounter,
-                    riders: [pool.shift(), pool.shift()],
-                    winnerId: null
-                });
-            } 
-            // 1 Rider left (Edge case if math is weird, put them in last heat)
-            else if (pool.length === 1) {
-                let leftOver = pool.shift();
-                if(currentHeats.length > 0) {
-                    currentHeats[currentHeats.length -1].riders.push(leftOver);
-                } else {
-                    // Only 1 rider total?
-                    alert("Not enough riders.");
-                }
-            }
-            heatCounter++;
-        }
-
-        // Switch Views
-        document.getElementById('qualifying-phase').classList.add('hidden');
-        document.getElementById('racing-phase').classList.remove('hidden');
-        renderHeats();
-    }
-
-    function renderHeats() {
-        const container = document.getElementById('heatsContainer');
-        container.innerHTML = '';
-
-        currentHeats.forEach((heat, index) => {
-            let ridersHtml = heat.riders.map(r => `
-                <button class="rider-btn ${heat.winnerId === r.id ? 'winner' : (heat.winnerId ? 'loser' : '')}" 
-                onclick="setWinner(${heat.id}, ${r.id})">
-                    ${r.name} (${r.time.toFixed(3)})
-                </button>
-            `).join('');
-
-            const div = document.createElement('div');
-            div.className = 'heat-card';
-            div.innerHTML = `
-                <div class="heat-title">Heat ${index + 1}</div>
-                <div class="riders">${ridersHtml}</div>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    function setWinner(heatId, winnerId) {
-        const heat = currentHeats.find(h => h.id === heatId);
-        heat.winnerId = winnerId;
-        renderHeats();
-    }
-
-    // --- PHASE 3: RESULTS ---
-
-    function finalizeRound() {
-        // Check if all heats have a winner
-        const incomplete = currentHeats.some(h => h.winnerId === null);
-        if (incomplete) return alert("Please select a winner for every heat.");
-
-        winners = [];
-        losers = [];
-
-        currentHeats.forEach(heat => {
-            heat.riders.forEach(r => {
-                if (r.id === heat.winnerId) {
-                    winners.push(r);
-                } else {
-                    losers.push(r);
-                }
-            });
-        });
-
-        // Show Results
-        document.getElementById('racing-phase').classList.add('hidden');
-        document.getElementById('results-phase').classList.remove('hidden');
-        
-        const wList = document.getElementById('winnersList');
-        const lList = document.getElementById('losersList');
-        
-        wList.innerHTML = winners.map(w => `<li>${w.name}</li>`).join('');
-        lList.innerHTML = losers.map(l => `<li>${l.name}</li>`).join('');
-    }
-
-    function resetHeats() {
-        // Logic to reset? Or start a new round with the winners?
-        // For now, let's just go back to the racing phase or entry phase?
-        // Let's go back to entry to allow re-seeding or editing.
-        document.getElementById('results-phase').classList.add('hidden');
-        document.getElementById('qualifying-phase').classList.remove('hidden');
-    }
-
-    function goBack() {
-        document.getElementById('racing-phase').classList.add('hidden');
-        document.getElementById('qualifying-phase').classList.remove('hidden');
-    }
-
-    function saveData() {
-        localStorage.setItem('trackRiders', JSON.stringify(riders));
-    }
-
-    // Initialize on load
-    renderTable();
-
-</script>
-</body>
-</html>
+        .toolbar { display: flex; gap: 10px; margin-bottom: 10px; justify-content:
