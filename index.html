@@ -2,407 +2,518 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>National Sprint Futures Ladder</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Pro Pacer Fixed</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
-        :root { --primary: #002366; --accent: #E30613; --bg: #f5f5f5; --card: #ffffff; }
-        body { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: #333; max-width: 1000px; margin: 0 auto; padding: 20px; }
-        
-        /* Headers */
-        header { text-align: center; margin-bottom: 30px; border-bottom: 4px solid var(--accent); padding-bottom: 20px; }
-        h1 { color: var(--primary); margin: 0; text-transform: uppercase; letter-spacing: 1px; }
-        h2 { font-size: 1.2rem; color: #666; font-weight: normal; margin-top: 5px; }
-        
-        /* Cards */
-        .card { background: var(--card); padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 25px; border-top: 5px solid var(--primary); }
-        .hidden { display: none !important; }
-
-        /* Buttons */
-        .btn { padding: 12px 24px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: background 0.2s; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: #003399; }
-        .btn-danger { background: var(--accent); color: white; font-size: 0.8rem; padding: 8px 16px; margin-top: 10px;}
-        .btn-action { width: 100%; margin-top: 15px; background: #28a745; color: white; }
-        
-        /* Tables & Inputs */
-        textarea { width: 100%; height: 100px; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { background: #eee; text-align: left; padding: 12px; border-bottom: 2px solid #ccc; font-weight: bold; color: var(--primary); }
-        td { padding: 10px; border-bottom: 1px solid #eee; }
-        input.time-box { padding: 8px; width: 100px; border: 2px solid #ddd; border-radius: 4px; font-weight: bold; color: var(--primary); }
-        
-        /* Heat Styling */
-        .heat-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .heat-card { background: white; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
-        .heat-header { background: var(--primary); color: white; padding: 10px; font-weight: bold; display: flex; justify-content: space-between; }
-        .heat-body { padding: 15px; }
-        
-        /* Rider Selection Buttons */
-        .rider-select { 
-            display: flex; justify-content: space-between; align-items: center;
-            background: #f9f9f9; border: 1px solid #eee; padding: 10px; margin-bottom: 8px; 
-            border-radius: 4px; cursor: pointer; transition: all 0.2s; user-select: none;
+        * {
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
-        .rider-select:hover { background: #eef; border-color: var(--primary); }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            margin: 0;
+            overflow: hidden;
+            touch-action: manipulation;
+            transition: background-color 0.3s ease;
+        }
+
+        /* --- ROW 1: TOP MENU --- */
+        .top-nav {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end; 
+            gap: 10px;
+            padding-right: 15px;
+            padding-left: 15px;
+            padding-top: max(15px, env(safe-area-inset-top)); 
+            margin-bottom: 5px;
+            z-index: 50;
+        }
+
+        .small-btn {
+            background: rgba(50,50,50,0.8);
+            border: 1px solid #777;
+            padding: 8px 12px; 
+            font-size: 0.85rem;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            text-decoration: none; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #btn-whatsapp { background-color: #25D366; border-color: #128C7E; font-weight: bold; }
+        #btn-qr { background-color: #fff; color: #000; font-weight: bold; border: none;}
+
+        /* --- ROW 2: TIMERS --- */
+        #timers-bar {
+            display: flex;
+            justify-content: space-between;
+            width: 94%;
+            padding: 5px 0;
+            color: #555;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            border-bottom: 1px solid #222; 
+        }
         
-        /* Finishing Positions */
-        .pos-1 { background-color: #d4edda !important; border-color: #28a745 !important; }
-        .pos-1::after { content: '🥇 1st (Moves Up)'; font-weight: bold; color: #155724; font-size: 0.8em; }
+        .timer-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 33%; 
+        }
+
+        .timer-val {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 2px;
+            font-variant-numeric: tabular-nums; 
+        }
+
+        .status-active .timer-val { color: #fff; text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+        .status-active .timer-label { color: #aaa; }
+        #skin-val { color: #00ffcc; } 
+
+        /* --- MAIN HUGE DISPLAY --- */
+        #last-lap-big {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 25vh;
+            font-weight: bold;
+            letter-spacing: -0.12em; 
+            text-shadow: 4px 4px 0px #000;
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            text-align: center;
+        }
+
+        .pulsing-text {
+            animation: pulse 1s infinite;
+            font-size: 12vh !important;
+            letter-spacing: 0 !important;
+            color: #00ffcc;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* --- TARGET INPUT --- */
+        .target-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 20px;
+            border-radius: 12px;
+            z-index: 20;
+        }
+        label { font-size: 1.2rem; color: #ddd; text-transform: uppercase;}
         
-        .pos-2 { background-color: #fff3cd !important; border-color: #ffc107 !important; }
-        .pos-2::after { content: '🥈 2nd (Stays)'; font-weight: bold; color: #856404; font-size: 0.8em; }
+        #target-input {
+            -webkit-user-select: text; 
+            user-select: text;
+            background: #222;
+            border: 1px solid #555;
+            color: #00ffcc;
+            font-size: 2rem;
+            width: 90px;
+            text-align: center;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 5px;
+        }
 
-        .pos-3 { background-color: #f8d7da !important; border-color: #dc3545 !important; }
-        .pos-3::after { content: '🔻 Last (Moves Down)'; font-weight: bold; color: #721c24; font-size: 0.8em; }
+        /* --- LAP HISTORY LIST --- */
+        #laps-container {
+            height: 18vh;
+            width: 94%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; 
+            text-align: center;
+            font-size: 1rem;
+            border-top: 1px solid #555;
+            margin-bottom: 5px;
+            background: rgba(0,0,0,0.3);
+            z-index: 20;
+            border-radius: 8px;
+        }
+        .lap-row {
+            padding: 8px 12px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+        }
+        .lap-good { color: #ffffff; font-weight: bold; } 
+        .lap-bad { color: #000000; font-weight: bold; }
 
-        .pos-1-final { background-color: #d4edda !important; border-color: #28a745 !important; }
-        .pos-1-final::after { content: '🥇 WINNER'; font-weight: bold; color: #155724; }
+        /* --- BUTTONS --- */
+        .controls {
+            display: flex;
+            width: 100%;
+            height: 22vh; 
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
+            z-index: 1000; /* FORCE ON TOP */
+        }
+        button {
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        button:active { opacity: 0.8; } 
+        
+        #btn-stop { width: 30%; background-color: #cc0000; border-right: 2px solid black;}
+        #btn-lap { width: 70%; background-color: #0044cc; font-size: 3rem; }
 
-        .status-badge { background: #e9ecef; padding: 5px 10px; border-radius: 12px; font-size: 0.85em; font-weight: bold; color: #555; }
+        .footer-credit {
+            font-size: 0.7rem;
+            color: #666;
+            margin-bottom: 5px;
+            z-index: 10;
+        }
+
+        /* --- QR MODAL --- */
+        #qr-modal {
+            display: none; 
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 2000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #qr-modal canvas {
+            border: 15px solid white;
+            border-radius: 5px;
+            width: 80vw;
+            max-width: 350px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        #btn-copy {
+            background: #0044cc;
+            color: white;
+            border: 2px solid white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        #close-text {
+            color: #aaa;
+            font-size: 1rem;
+            text-decoration: underline;
+        }
+
     </style>
 </head>
 <body>
 
-<header>
-    <h1>Sprint Futures Ladder</h1>
-    <h2 id="phaseDisplay">Phase 1: Qualifying</h2>
-    <button class="btn btn-danger" onclick="hardReset()">⚠ Reset / Clear All Data</button>
-</header>
-
-<div id="phase-qualifying" class="card">
-    <h3>1. Rider Registration</h3>
-    <p>Paste names below (one name per line) and click Import.</p>
-    
-    <textarea id="importArea" placeholder="Example:&#10;John Smith&#10;Jane Doe&#10;Bob Jones"></textarea>
-    <button class="btn btn-primary" onclick="importNames()">Import Riders</button>
-    
-    <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #eee; padding-top:15px;">
-        <span><strong>Riders Registered:</strong> <span id="riderCount">0</span></span>
-        <button class="btn" style="background:#ddd; font-size:0.9em;" onclick="sortByTime()">Sort by Time</button>
+    <div id="qr-modal">
+        <canvas id="qr-code"></canvas>
+        <button id="btn-copy">📋 Copy Link</button>
+        <div id="close-text">Close X</div>
     </div>
 
-    <table>
-        <thead><tr><th>Seed</th><th>Name</th><th>Time (Sec)</th><th>Action</th></tr></thead>
-        <tbody id="riderTable"></tbody>
-    </table>
-
-    <div style="text-align: center; margin-top: 20px;">
-        <button class="btn btn-action" onclick="generateRound1()">GENERATE ROUND 1 HEATS &rarr;</button>
+    <div class="top-nav">
+        <button id="btn-qr" class="small-btn">QR 📱</button>
+        <button id="btn-whatsapp" class="small-btn">Share 💬</button>
+        <button id="btn-reset" class="small-btn">RESET</button>
     </div>
-</div>
 
-<div id="phase-racing" class="card hidden">
-    <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-        <h3>Race Card</h3>
-        <span class="status-badge" id="roundBadge">Round 1</span>
+    <div id="timers-bar">
+        <div class="timer-col">
+            <span class="timer-label">Total</span>
+            <span id="total-val" class="timer-val">00:00.0</span>
+        </div>
+        <div class="timer-col">
+            <span class="timer-label">Lap</span>
+            <span id="lap-val" class="timer-val">00:00.0</span>
+        </div>
+        <div class="timer-col">
+            <span class="timer-label">Skin</span>
+            <span id="skin-val" class="timer-val">0.0</span>
+        </div>
     </div>
-    
-    <p style="background:#e3f2fd; padding:10px; border-radius:4px; color: #0d47a1; border-left: 5px solid #2196F3;">
-        <strong>Instructions:</strong> Click riders in their finish order.<br>
-        1st Click = Winner (Green), Last Click = Loser (Red).
-    </p>
 
-    <div id="heatsContainer" class="heat-container"></div>
+    <div id="last-lap-big" class="pulsing-text">READY</div>
 
-    <button class="btn btn-action" onclick="finishRound()">CONFIRM RESULTS & GENERATE NEXT ROUND &rarr;</button>
-</div>
-
-<div id="phase-standings" class="card hidden">
-    <h3>Event Complete</h3>
-    <div style="text-align:center; padding: 40px;">
-        <h2>🏁 Competition Finished</h2>
-        <p>The ladder is complete.</p>
-        <button class="btn btn-primary" onclick="hardReset()">Start New Event</button>
+    <div class="target-container">
+        <label>Target:</label>
+        <input type="number" id="target-input" value="15.0" step="0.1">
     </div>
-</div>
 
-<script>
-    // --- STATE MANAGEMENT ---
-    let riders = [];
-    let heats = [];
-    let roundCounter = 1;
-    const TOTAL_ROUNDS = 3; 
-    const STORAGE_KEY = 'sprintData_v6'; // Updated Key
+    <div id="laps-container">
+        <div id="laps-list"></div>
+    </div>
 
-    // --- SAFETY LOAD SYSTEM ---
-    window.onload = function() {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if(saved) {
-                const data = JSON.parse(saved);
-                if(data.riders && Array.isArray(data.riders)) {
-                    riders = data.riders;
-                    heats = data.heats || [];
-                    roundCounter = data.roundCounter || 1;
-                    
-                    if(heats.length > 0) {
-                        showPhase('phase-racing');
-                        renderHeats();
-                    } else {
-                        renderTable();
-                    }
-                }
-            }
-        } catch(e) {
-            console.warn("Data corrupt or old version. Resetting.", e);
-            localStorage.removeItem(STORAGE_KEY);
-            riders = [];
-        }
-    };
+    <div class="footer-credit">Built by Michael@makemefaster.com</div>
 
-    function save() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ riders, heats, roundCounter }));
-    }
+    <div class="controls">
+        <button id="btn-stop">Stop</button>
+        <button id="btn-lap">START</button>
+    </div>
 
-    // MAKE FUNCTION GLOBAL FOR BUTTON
-    window.hardReset = function() {
-        if(confirm("Are you sure? This will delete all names and times.")) {
-            localStorage.removeItem(STORAGE_KEY);
-            location.reload();
-        }
-    }
+    <script>
+        // --- SAFE VARIABLES ---
+        let startTime = 0;       
+        let accumulatedTime = 0; 
+        let timerInterval;
+        let running = false;
+        let flashTimeout; 
+        let sessionData = []; 
+        let totalTimeElapsed = 0;
+        let lapTimeElapsed = 0;
+        let lastTick = 0;
 
-    // --- PHASE 1: QUALIFYING ---
-
-    // MAKE FUNCTION GLOBAL FOR BUTTON
-    window.importNames = function() {
-        const input = document.getElementById('importArea');
-        const text = input.value;
+        // --- ELEMENTS ---
+        const timersBar = document.getElementById("timers-bar");
+        const totalDisplay = document.getElementById("total-val");
+        const lapDisplay = document.getElementById("lap-val");
+        const skinDisplay = document.getElementById("skin-val");
+        const lastLapBigDisplay = document.getElementById("last-lap-big");
+        const lapBtn = document.getElementById("btn-lap");
+        const stopBtn = document.getElementById("btn-stop");
+        const lapsList = document.getElementById("laps-list");
+        const targetInput = document.getElementById("target-input");
+        const qrModal = document.getElementById("qr-modal");
         
-        if(!text.trim()) {
-            alert("Please paste some names in the box first.");
-            return;
+        // Buttons for Menu
+        const btnQr = document.getElementById("btn-qr");
+        const btnWa = document.getElementById("btn-whatsapp");
+        const btnReset = document.getElementById("btn-reset");
+        const btnCopy = document.getElementById("btn-copy");
+        const btnCloseQr = document.getElementById("close-text");
+
+        // --- EVENT LISTENERS (MORE ROBUST) ---
+        lapBtn.addEventListener('click', lapOrStart);
+        stopBtn.addEventListener('click', stopTimer);
+        btnQr.addEventListener('click', showQR);
+        btnWa.addEventListener('click', shareToWhatsapp);
+        btnReset.addEventListener('click', resetAll);
+        btnCopy.addEventListener('click', copyToClipboard);
+        btnCloseQr.addEventListener('click', closeQR);
+
+        // --- FUNCTIONS ---
+
+        function formatFullTime(ms) {
+            let date = new Date(ms);
+            let m = date.getUTCMinutes().toString().padStart(2, '0');
+            let s = date.getUTCSeconds().toString().padStart(2, '0');
+            let t = Math.floor(date.getUTCMilliseconds() / 10).toString().padStart(2, '0');
+            return m + ":" + s + "." + t;
         }
 
-        const lines = text.split(/\r?\n/);
-        let count = 0;
+        function tick() {
+            const now = Date.now();
+            const delta = now - lastTick;
+            lastTick = now;
 
-        lines.forEach(line => {
-            if(line.trim()) {
-                riders.push({ 
-                    id: 'r' + Date.now() + Math.random().toString(36).substr(2, 5),
-                    name: line.trim(), 
-                    time: 999 
-                });
-                count++;
-            }
-        });
+            totalTimeElapsed += delta;
+            lapTimeElapsed += delta;
 
-        input.value = ''; 
-        save();
-        renderTable();
-        alert("Imported " + count + " riders successfully!");
-    }
+            totalDisplay.innerText = formatFullTime(totalTimeElapsed);
+            lapDisplay.innerText = formatFullTime(lapTimeElapsed);
 
-    window.updateTime = function(id, val) {
-        const r = riders.find(x => x.id === id);
-        if(r) r.time = parseFloat(val) || 999;
-        save();
-    }
-
-    window.sortByTime = function() {
-        riders.sort((a,b) => a.time - b.time);
-        renderTable();
-    }
-
-    function renderTable() {
-        const tbody = document.getElementById('riderTable');
-        document.getElementById('riderCount').innerText = riders.length;
-        tbody.innerHTML = '';
-        
-        riders.forEach((r, i) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${i+1}</td>
-                <td>${r.name}</td>
-                <td><input class="time-box" type="number" step="0.001" placeholder="0.000" value="${r.time === 999 ? '' : r.time}" onchange="updateTime('${r.id}', this.value)"></td>
-                <td><button style="background:#ffcccc; border:1px solid red; cursor:pointer;" onclick="deleteRider('${r.id}')">X</button></td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-
-    window.deleteRider = function(id) {
-        if(confirm('Remove rider?')) {
-            riders = riders.filter(r => r.id !== id);
-            save();
-            renderTable();
-        }
-    }
-
-    // --- PHASE 2: HEAT GENERATION ---
-
-    window.generateRound1 = function() {
-        if(riders.length < 2) return alert("Need at least 2 riders");
-        
-        // 1. Sort by Time (Fastest to Slowest)
-        riders.sort((a,b) => a.time - b.time);
-
-        heats = [];
-        let pool = [...riders];
-        
-        // Heat A is ALWAYS 2 Riders
-        if(pool.length >= 2) {
-            heats.push({
-                name: "Heat A",
-                riders: [pool.shift(), pool.shift()],
-                results: [] 
-            });
+            let totalSeconds = Math.floor(lapTimeElapsed / 1000);
+            let secondsDigit = totalSeconds % 10;
+            let tenthsDigit = Math.floor((lapTimeElapsed % 1000) / 100);
+            skinDisplay.innerText = secondsDigit + "." + tenthsDigit;
         }
 
-        // Remaining Heats are 3-up
-        let heatChar = 66; // 'B'
-        while(pool.length > 0) {
-            let size = 3;
-            // Adjustment for remainders to ensure no 1-rider heats
-            if (pool.length === 4) size = 2; 
-            if (pool.length === 2) size = 2;
-            if (pool.length === 1) {
-                // Add straggler to previous heat if necessary
-                if(heats.length > 0) heats[heats.length-1].riders.push(pool.shift());
-                continue;
-            }
-
-            let heatRiders = [];
-            for(let i=0; i<size; i++) if(pool.length) heatRiders.push(pool.shift());
-
-            heats.push({
-                name: "Heat " + String.fromCharCode(heatChar),
-                riders: heatRiders,
-                results: []
-            });
-            heatChar++;
-        }
-
-        roundCounter = 1;
-        save();
-        showPhase('phase-racing');
-        renderHeats();
-    }
-
-    function renderHeats() {
-        const container = document.getElementById('heatsContainer');
-        container.innerHTML = '';
-        document.getElementById('roundBadge').innerText = roundCounter === TOTAL_ROUNDS ? "FINAL ROUND" : "Round " + roundCounter;
-
-        heats.forEach((heat, hIndex) => {
-            const card = document.createElement('div');
-            card.className = 'heat-card';
-            
-            let html = `
-                <div class="heat-header">
-                    <span>${heat.name}</span>
-                    <span>${heat.riders.length} Riders</span>
-                </div>
-                <div class="heat-body">`;
-            
-            heat.riders.forEach(r => {
-                let posClass = '';
-                let posIndex = heat.results.indexOf(r.id);
+        function lapOrStart() {
+            if (!running) {
+                // START LOGIC
+                running = true;
+                lastTick = Date.now();
+                timerInterval = setInterval(tick, 30); 
                 
-                // Visual Styling for 1st, 2nd, Last
-                if (posIndex === 0) posClass = roundCounter === TOTAL_ROUNDS ? 'pos-1-final' : 'pos-1';
-                else if (posIndex === heat.riders.length - 1 && posIndex > 0) posClass = 'pos-3'; // Last
-                else if (posIndex > 0) posClass = 'pos-2'; // Middle/2nd
+                lapBtn.innerText = "LAP";
+                lapBtn.style.backgroundColor = "#0044cc"; 
+                targetInput.disabled = true;
+                timersBar.classList.add("status-active");
 
-                html += `<div class="rider-select ${posClass}" onclick="setResult(${hIndex}, '${r.id}')">
-                            <span>${r.name}</span>
-                         </div>`;
+                if(totalTimeElapsed === 0) {
+                    document.body.style.backgroundColor = "#000000"; 
+                    lastLapBigDisplay.innerText = "GO!";
+                    lastLapBigDisplay.classList.add("pulsing-text");
+                    sessionData = []; 
+                }
+            } else {
+                // LAP LOGIC
+                handleLap();
+            }
+        }
+
+        function handleLap() {
+            lastLapBigDisplay.classList.remove("pulsing-text");
+            
+            let finalLapTimeMs = lapTimeElapsed;
+            let finalLapStr = formatFullTime(finalLapTimeMs); 
+            let skinStr = skinDisplay.innerText; 
+
+            let targetVal = parseFloat(targetInput.value);
+            let skinValNum = parseFloat(skinStr);
+
+            lastLapBigDisplay.innerText = skinStr;
+            let isGood = skinValNum <= targetVal;
+
+            let lapNum = sessionData.length + 1;
+            sessionData.push({
+                num: lapNum,
+                time: finalLapStr, 
+                skin: skinStr,
+                status: isGood ? "✅" : "❌"
             });
+
+            if (flashTimeout) clearTimeout(flashTimeout);
+            document.body.style.backgroundColor = isGood ? "#00aa55" : "#dd2222";
+            flashTimeout = setTimeout(() => {
+                 document.body.style.backgroundColor = "#000000";
+            }, 4000);
+
+            let row = document.createElement("div");
+            row.className = "lap-row " + (isGood ? "lap-good" : "lap-bad");
+            row.innerHTML = "<span>#" + lapNum + "</span> <span>" + finalLapStr + "</span>";
+            lapsList.prepend(row);
+
+            lapTimeElapsed = 0;
+            lapDisplay.innerText = "00:00.00";
+            skinDisplay.innerText = "0.0";
+        }
+
+        function stopTimer() {
+            if (running) {
+                running = false;
+                clearInterval(timerInterval);
+                lapBtn.innerText = "RESUME";
+                lapBtn.style.backgroundColor = "#00aa55";
+                targetInput.disabled = false;
+                timersBar.classList.remove("status-active");
+                lastLapBigDisplay.classList.remove("pulsing-text");
+            }
+        }
+
+        function resetAll() {
+            stopTimer();
+            if (flashTimeout) clearTimeout(flashTimeout);
+            document.body.style.backgroundColor = "#000000";
             
-            html += `</div>`;
-            card.innerHTML = html;
-            container.appendChild(card);
-        });
-    }
-
-    window.setResult = function(heatIndex, riderId) {
-        let heat = heats[heatIndex];
-        
-        // Toggle Logic
-        if (heat.results.includes(riderId)) {
-            heat.results = heat.results.filter(id => id !== riderId);
-        } else {
-            if (heat.results.length < heat.riders.length) {
-                heat.results.push(riderId);
-            }
-        }
-        save();
-        renderHeats();
-    }
-
-    // --- PHASE 3: PROMOTION / DEMOTION ---
-
-    window.finishRound = function() {
-        // Validation
-        for(let h of heats) {
-            if(h.results.length !== h.riders.length) return alert(`Please select finishing positions for ${h.name} first.`);
+            totalTimeElapsed = 0;
+            lapTimeElapsed = 0;
+            totalDisplay.innerText = "00:00.00";
+            lapDisplay.innerText = "00:00.00";
+            skinDisplay.innerText = "0.0";
+            lastLapBigDisplay.innerText = "READY";
+            lastLapBigDisplay.classList.add("pulsing-text");
+            lapsList.innerHTML = "";
+            lapBtn.innerText = "START";
+            lapBtn.style.backgroundColor = "#0044cc";
+            targetInput.disabled = false;
+            sessionData = [];
         }
 
-        if(roundCounter >= TOTAL_ROUNDS) {
-            showPhase('phase-standings');
-            return;
-        }
-
-        // Logic: Winner UP, Loser DOWN
-        let nextRoundBuckets = heats.map(() => []);
-
-        heats.forEach((heat, index) => {
-            const winnerId = heat.results[0];
-            const loserId = heat.results[heat.results.length - 1];
+        // --- STRING GENERATOR ---
+        function buildWhatsAppText() {
+            if (sessionData.length === 0) return "No data";
             
-            // 1. Winner moves UP (index - 1)
-            if (index === 0) {
-                nextRoundBuckets[0].push(getRider(winnerId)); // Heat A winner stays in A
+            let msg = "*⏱️ PACER SESSION*\n";
+            msg += "Target: " + targetInput.value + "s\n\n";
+            
+            for (let i = 0; i < sessionData.length; i++) {
+                let lap = sessionData[i];
+                let cleanTime = lap.time;
+                if(cleanTime.indexOf("00:") === 0) {
+                    cleanTime = cleanTime.substring(3);
+                }
+                msg += "Lap " + lap.num + " -> " + cleanTime + " " + lap.status + "\n";
+            }
+            
+            msg += "\nTotal Time: " + totalDisplay.innerText;
+            msg += "\n🚀 Built by Michael@makemefaster.com";
+            return msg;
+        }
+
+        function shareToWhatsapp() {
+            if (sessionData.length === 0) { alert("No laps to share!"); return; }
+            let encodedMsg = encodeURIComponent(buildWhatsAppText());
+            window.open("https://wa.me/?text=" + encodedMsg, "_blank");
+        }
+
+        function showQR() {
+            if (sessionData.length === 0) { alert("No laps to share!"); return; }
+            
+            let rawText = buildWhatsAppText();
+            let encodedText = encodeURIComponent(rawText);
+            let waLink = "https://wa.me/?text=" + encodedText;
+
+            var qr = new QRious({
+              element: document.getElementById('qr-code'),
+              value: waLink,
+              size: 500,  
+              level: 'L' 
+            });
+
+            qrModal.style.display = "flex";
+        }
+
+        function copyToClipboard() {
+            let text = buildWhatsAppText(); 
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert("✅ Copied Full Report to Clipboard!");
+                }).catch(err => { manualCopy(text); });
             } else {
-                nextRoundBuckets[index - 1].push(getRider(winnerId));
+                manualCopy(text);
             }
-
-            // 2. Loser moves DOWN (index + 1)
-            if (index === heats.length - 1) {
-                nextRoundBuckets[index].push(getRider(loserId)); // Last heat loser stays
-            } else {
-                nextRoundBuckets[index + 1].push(getRider(loserId));
-            }
-
-            // 3. Middle Riders (Stay)
-            for(let i=1; i < heat.results.length - 1; i++) {
-                nextRoundBuckets[index].push(getRider(heat.results[i]));
-            }
-        });
-
-        // Create new heat objects
-        heats = nextRoundBuckets.map((bucket, i) => ({
-            name: heats[i].name,
-            riders: bucket,
-            results: []
-        }));
-
-        roundCounter++;
-        save();
-        renderHeats();
-        alert("Round Complete! Winners promoted, losers relegated.");
-    }
-
-    function getRider(id) {
-        return riders.find(r => r.id === id);
-    }
-
-    function showPhase(id) {
-        ['phase-qualifying', 'phase-racing', 'phase-standings'].forEach(p => {
-            document.getElementById(p).classList.add('hidden');
-        });
-        document.getElementById(id).classList.remove('hidden');
+        }
         
-        const titles = {
-            'phase-qualifying': 'Qualifying',
-            'phase-racing': 'Ladder Racing',
-            'phase-standings': 'Final Results'
-        };
-        document.getElementById('phaseDisplay').innerText = titles[id];
-    }
+        function manualCopy(text) {
+             const textArea = document.createElement("textarea");
+             textArea.value = text;
+             textArea.style.position = "fixed"; 
+             textArea.style.left = "-9999px";
+             document.body.appendChild(textArea);
+             textArea.focus();
+             textArea.select();
+             try {
+                 document.execCommand('copy');
+                 alert("✅ Copied Full Report to Clipboard!");
+             } catch (err) {
+                 alert("Use the Share button instead.");
+             }
+             document.body.removeChild(textArea);
+        }
 
-</script>
-
+        function closeQR() {
+            qrModal.style.display = "none";
+        }
+    </script>
 </body>
 </html>
